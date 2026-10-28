@@ -1,0 +1,23 @@
+{# Barra superior de todas as telas. Para acrescentar uma tela migrada, inclua uma linha em TELAS. #}
+{% set TELAS = [
+  ("inicio.index", "Início"),
+  ("habilitacao.ativador", "Ativador"),
+  ("extrator.extrator", "Extrator"),
+  ("coleta.coleta", "Coleta"),
+  ("conciliacao.conciliacao", "Conciliação"),
+  ("taxa.taxas", "Taxas"),
+  ("acesso.acessos", "Acessos"),
+  ("execucao.status", "Status"),
+] %}
+<nav class="topbar">
+  <a href="{{ url_for('inicio.index') }}" class="topbar-brand">
+    <img src="{{ url_for('static', filename='css/LogoMegavale.png') }}" style="height:30px;width:auto;"
+      alt="Megavale">
+    <span class="topbar-name">Painel de <span>Automações</span> <small class="topbar-tag">Playwright</small></span>
+  </a>
+  <div class="topbar-nav">
+    {% for endpoint, rotulo in TELAS %}
+    <a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint %} class="active"{% endif %}>{{ rotulo }}</a>
+    {% endfor %}
+  </div>
+</nav>

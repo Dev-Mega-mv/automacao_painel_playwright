@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alterar Conciliação — Painel de Automações</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css">
+  <style>
+    .modo-info {
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: .85rem 1.1rem;
+      margin-top: 1rem;
+      font-size: .82rem;
+      color: #4b6080;
+      line-height: 1.55;
+    }
+
+    .modo-info strong {
+      color: #0a1628;
+    }
+
+    .modo-info ul {
+      margin: .4rem 0 0 1.1rem;
+    }
+
+    .modo-info li+li {
+      margin-top: .25rem;
+    }
+
+    .modo-info.altera {
+      background: #fff7ed;
+      border-color: #fed7aa;
+      color: #9a3412;
+    }
+
+    .modo-info.altera strong {
+      color: #7c2d12;
+    }
+
+    /* ── Entrada (um credenciado ou planilha) ── */
+    #mainForm[data-entrada="unico"] .so-planilha,
+    #mainForm[data-entrada="planilha"] .so-unico {
+      display: none;
+    }
+
+    /* ── Planilha ── */
+    .modelo-planilha {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: .75rem 1rem;
+      margin-bottom: .9rem;
+      padding: .8rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+    }
+
+    .modelo-texto {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      flex: 1 1 260px;
+      font-size: .82rem;
+      color: #4b6080;
+      line-height: 1.45;
+    }
+
+    .modelo-texto i {
+      font-size: 1.25rem;
+      color: #10b981;
+      line-height: 1;
+    }
+
+    .modelo-texto strong {
+      color: #0a1628;
+    }
+
+    .modelo-planilha .btn {
+      padding: .55rem 1.1rem;
+      font-size: .85rem;
+      white-space: nowrap;
+    }
+
+    .drop-zone {
+      border: 2px dashed #93c5fd;
+      border-radius: 10px;
+      padding: 2rem;
+      text-align: center;
+      background: #f4f8ff;
+      cursor: pointer;
+      transition: all .2s;
+      position: relative;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: #1a6ef5;
+      background: #eff6ff;
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon {
+      font-size: 2rem;
+      color: #93c5fd;
+      margin-bottom: .5rem;
+    }
+
+    .drop-titulo {
+      font-weight: 600;
+      color: #1d4ed8;
+      font-size: .92rem;
+    }
+
+    .drop-sub {
+      font-size: .78rem;
+      color: #4b6080;
+      margin-top: .3rem;
+    }
+
+    .drop-arquivo {
+      font-size: .82rem;
+      color: #10b981;
+      margin-top: .5rem;
+      font-weight: 500;
+    }
+
+    .planilha-ajuda {
+      margin-top: 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      padding: .8rem 1rem;
+    }
+
+    .planilha-ajuda summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: .86rem;
+      color: #1d4ed8;
+    }
+
+    .planilha-ajuda summary i {
+      margin-right: 6px;
+    }
+
+    .planilha-ajuda ul {
+      margin: .75rem 0 0 1.1rem;
+      font-size: .8rem;
+      color: #4b6080;
+      line-height: 1.55;
+    }
+
+    .planilha-ajuda li+li {
+      margin-top: .35rem;
+    }
+
+    @media (max-width: 600px) {
+      .modelo-planilha .btn {
+        width: 100%;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tema.css') }}">
+</head>
+
+<body>
+  {% include "_menu.html" %}
+
+  <div class="main-container">
+    <div class="page-header">
+      <span class="page-eyebrow"><i class="bi bi-arrow-left-right"></i> Conciliação EDI</span>
+      <h1>Alterar Conciliação</h1>
+      <p>Troque a conciliação de vendas EDI de um credenciado, ou de vários de uma vez com uma planilha.</p>
+    </div>
+
+    <div class="flash-container">
+      {% with messages = get_flashed_messages() %}{% if messages %}
+      {% for msg in messages %}<div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill"></i> {{ msg
+        }}</div>{% endfor %}
+      {% endif %}{% endwith %}
+    </div>
+
+    <!-- Credenciais -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard('cred-body','cred-icon')">
+        <h5><span class="icon"><i class="bi bi-shield-lock-fill"></i></span> Credenciais Infox</h5>
+        <i class="bi bi-chevron-up" id="cred-icon" style="color:#4b6080;transition:.2s;"></i>
+      </div>
+      <div class="card-body" id="cred-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label>Login</label>
+            <input type="text" id="login_infox" placeholder="Usuário Infox">
+          </div>
+          <div class="form-group">
+            <label>Senha</label>
+            <input type="password" id="senha_infox" placeholder="••••••••">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form method="post" action="{{ url_for('conciliacao.conciliacao') }}" enctype="multipart/form-data" id="mainForm"
+      data-entrada="{{ entrada }}">
+      <input type="hidden" id="h_login" name="login_infox">
+      <input type="hidden" id="h_senha" name="senha_infox">
+      <input type="hidden" name="entrada" id="val_entrada" value="{{ entrada }}">
+      <input type="hidden" name="tipo_pesquisa" id="val_tipo_pesquisa" value="COD">
+
+      <div class="card">
+        <div class="card-header">
+          <h5><span class="icon"><i class="bi bi-sliders"></i></span> Conciliação</h5>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="nomeConciliacao">Nova conciliação</label>
+            <select name="nome_conciliacao" id="nomeConciliacao" required>
+              {% for opcao in conciliacoes %}
+              <option value="{{ opcao }}"{% if loop.first %} selected{% endif %}>{{ opcao }}</option>
+              {% endfor %}
+            </select>
+            <div class="hint">Vale para todos os credenciados. O robô escolhe a opção com esse nome na lista do portal.
+            </div>
+          </div>
+
+          <div class="modo-info altera">
+            <strong>Altera dados no portal.</strong> Para cada credenciado:
+            <ul>
+              <li>confere se a tela aberta é do credenciado pesquisado (uma lista de resultados ou outro credenciado
+                vira erro, sem alterar nada);</li>
+              <li>em <strong>Alterar configuração EDI</strong>, escolhe a conciliação e salva. Se já estiver com ela,
+                não salva;</li>
+              <li>depois de salvar, confere a conciliação na tela do credenciado.</li>
+            </ul>
+            <div style="margin-top:.5rem;">Para ver a conciliação atual antes, use o <strong>Extrator &gt; Dados
+                cadastrais</strong> (coluna CONCILIACAO).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h5><span class="icon"><i class="bi bi-people-fill"></i></span> Credenciados</h5>
+        </div>
+        <div class="card-body">
+
+          <div class="form-group">
+            <label>Credenciados de onde?</label>
+            <div class="toggle-group">
+              <button type="button" class="toggle-btn{% if entrada == 'unico' %} active{% endif %}" data-field="entrada"
+                data-value="unico" onclick="setEntrada('unico')">
+                <i class="bi bi-person"></i> Um credenciado
+              </button>
+              <button type="button" class="toggle-btn{% if entrada == 'planilha' %} active{% endif %}"
+                data-field="entrada" data-value="planilha" onclick="setEntrada('planilha')">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Planilha
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top:1rem;">
+            <label>Tipo de Pesquisa</label>
+            <div class="toggle-group">
+              <button type="button" class="toggle-btn active" data-field="tipo_pesquisa" data-value="COD"
+                onclick="selectToggle(this); atualizarExemplos()">
+                <i class="bi bi-hash"></i> Código
+              </button>
+              <button type="button" class="toggle-btn" data-field="tipo_pesquisa" data-value="CPF"
+                onclick="selectToggle(this); atualizarExemplos()">
+                <i class="bi bi-person"></i> CPF
+              </button>
+              <button type="button" class="toggle-btn" data-field="tipo_pesquisa" data-value="CNPJ"
+                onclick="selectToggle(this); atualizarExemplos()">
+                <i class="bi bi-building"></i> CNPJ
+              </button>
+            </div>
+            <div class="hint so-planilha">Vale para todas as linhas da planilha.</div>
+          </div>
+
+          <div class="form-group so-unico" style="margin-top:1rem;">
+            <label>Código / CPF / CNPJ</label>
+            <input type="text" name="cod_cnpj" id="codCnpj" placeholder="Ex: 12345" required {% if
+              entrada=='planilha' %}disabled{% endif %}>
+          </div>
+
+          <div class="so-planilha" style="margin-top:1rem;">
+            <div class="modelo-planilha">
+              <div class="modelo-texto">
+                <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+                <div><strong>Comece pelo modelo.</strong> Uma coluna COD, um credenciado por linha.</div>
+              </div>
+              <a href="{{ url_for('conciliacao.modelo_planilha') }}" class="btn btn-secondary" id="baixarModelo">
+                <i class="bi bi-download"></i> Baixar modelo
+              </a>
+            </div>
+
+            <div class="drop-zone" id="dropZone">
+              <input type="file" name="file" id="fileInput" accept=".xlsx,.xlsm" onchange="mostrarArquivo(this)" required
+                {% if entrada=='unico' %}disabled{% endif %}>
+              <div class="drop-icon"><i class="bi bi-cloud-arrow-up"></i></div>
+              <div class="drop-titulo">Clique para selecionar ou arraste a planilha aqui</div>
+              <div class="drop-sub">Formato aceito: .xlsx</div>
+              <div class="drop-arquivo" id="nomeArquivo"></div>
+            </div>
+
+            <details class="planilha-ajuda">
+              <summary><i class="bi bi-info-circle-fill"></i>Como montar a planilha</summary>
+              <ul>
+                <li>Uma coluna <strong>COD</strong> com um credenciado por linha (também vale <code>CODIGO</code>,
+                  <code>CNPJ</code>, <code>CPF</code>, <code>COD_CNPJ</code> ou <code>CPF_CNPJ</code>). Exemplo:
+                  <code id="exemploPlanilha">12345</code>.</li>
+                <li>O tipo de pesquisa e a conciliação escolhidos nesta tela valem para todas as linhas.</li>
+                <li>Outras colunas, como FANTASIA, são ignoradas. Linhas sem código são puladas.</li>
+                <li>A planilha do painel Selenium (coluna COD) funciona como está.</li>
+                <li>O relatório é salvo a cada credenciado, com a conciliação de antes e a de depois.</li>
+              </ul>
+            </details>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="display:flex;gap:.75rem;">
+        <button type="submit" class="btn btn-primary btn-lg" id="btnSubmit" style="flex:1;">
+          <i class="bi bi-play-fill"></i> <span id="btnLabel">Alterar conciliação</span>
+        </button>
+        <a href="{{ url_for('inicio.index') }}" class="btn btn-secondary btn-lg"><i class="bi bi-arrow-left"></i> Voltar</a>
+      </div>
+    </form>
+  </div>
+
+  <footer>Painel de Automações — Megavale © 2026</footer>
+
+  <script>
+    const TEXTO_BOTAO = { unico: 'Alterar conciliação', planilha: 'Alterar conciliação da planilha' };
+
+    // Exemplos fictícios do campo de código e da ajuda da planilha, conforme o tipo de pesquisa
+    const EXEMPLOS = { COD: '12345', CPF: '123.456.789-00', CNPJ: '12.345.678/0001-90' };
+
+    function toggleCard(b, i) {
+      const body = document.getElementById(b), icon = document.getElementById(i);
+      const open = body.style.display !== 'none';
+      body.style.display = open ? 'none' : 'block';
+      icon.style.transform = open ? 'rotate(180deg)' : 'rotate(0)';
+    }
+
+    function selectToggle(btn) {
+      const field = btn.dataset.field;
+      document.querySelectorAll(`[data-field="${field}"]`).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(`val_${field}`).value = btn.dataset.value;
+    }
+
+    function atualizarExemplos() {
+      const exemplo = EXEMPLOS[document.getElementById('val_tipo_pesquisa').value] || EXEMPLOS.COD;
+      document.getElementById('codCnpj').placeholder = 'Ex: ' + exemplo;
+      document.getElementById('exemploPlanilha').textContent = exemplo;
+    }
+
+    // O que fica escondido é desativado: não é enviado nem exigido.
+    function setEntrada(entrada) {
+      const isPlanilha = entrada === 'planilha';
+      document.getElementById('val_entrada').value = entrada;
+      document.getElementById('mainForm').dataset.entrada = entrada;
+      document.querySelectorAll('[data-field="entrada"]').forEach(b => b.classList.toggle('active', b.dataset.value === entrada));
+      document.getElementById('codCnpj').disabled = isPlanilha;
+      document.getElementById('fileInput').disabled = !isPlanilha;
+      document.getElementById('btnLabel').textContent = TEXTO_BOTAO[entrada];
+    }
+
+    function mostrarArquivo(input) {
+      document.getElementById('nomeArquivo').textContent = input.files.length ? '✓ ' + input.files[0].name : '';
+    }
+
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const fileInput = document.getElementById('fileInput');
+      fileInput.files = e.dataTransfer.files;
+      mostrarArquivo(fileInput);
+    });
+
+    document.getElementById('btnSubmit').addEventListener('click', function () {
+      document.getElementById('h_login').value = document.getElementById('login_infox').value;
+      document.getElementById('h_senha').value = document.getElementById('senha_infox').value;
+    });
+
+    setEntrada(document.getElementById('val_entrada').value);
+    atualizarExemplos();
+  </script>
+</body>
+
+</html>

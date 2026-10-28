@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.py[cod]
+
+.env
+.env.*
+
+# Perfis do Chrome (cookies e sessão do portal), logs/capturas/traces e planilhas geradas
+perfis/
+logs/
+relatorios/
+modificacoes/
+*.xlsx
+*.xls
+
+CLAUDE.md
+
+
