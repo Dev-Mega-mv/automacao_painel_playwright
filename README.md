@@ -38,11 +38,22 @@ Tudo em `config.py`, com a opção de trocar por variável de ambiente:
 | `HEADLESS` | `0` | `1` roda o Chrome sem janela |
 | `ESPERA_CAPTCHA_S` | `120` | Tempo para resolver o captcha à mão se o login não passar sozinho |
 | `SALVAR_TRACE` | `erro` | `sempre`, `erro` ou `nunca`. O trace abre com `python -m playwright show-trace logs/<arquivo>.zip` |
+| `EXECUCOES_SIMULTANEAS` | `3` | Quantas automações podem rodar ao mesmo tempo (cada Chrome usa de 300 a 500 MB) |
 | `FLASK_DEBUG` | `0` | `1` liga o modo debug. Com ele, salvar um `.py` reinicia o Flask e derruba a automação em andamento |
 | `URL_PORTAL` | portal Infox | Útil para apontar para um ambiente de teste |
 | `URL_MEGAVALE` | painel Megavale (`https://app.megavalecard.com.br/`) | Painel administrativo usado pela criação de acesso |
 
 Exemplo: `$env:SALVAR_TRACE = "sempre"; python app.py`
+
+## Várias automações ao mesmo tempo
+
+O painel roda até `EXECUCOES_SIMULTANEAS` automações ao mesmo tempo, de tipos iguais ou diferentes, cada uma no seu Chrome. Passando do limite, a tela avisa e não inicia.
+
+- **Status** (`/status`) lista as execuções desde que o painel abriu: as que estão rodando e as 20 últimas encerradas. Cada uma tem a sua página (`/status/<id>`) com o log, o botão de parar e o relatório. Parar uma não mexe nas outras.
+- **ID da execução** = automação + data e hora do início (ex.: `habilitacao_20261028_101500`). Se duas do mesmo tipo começarem no mesmo segundo, a segunda ganha `_2`. O ID também vai no nome do log, do relatório e das capturas, então os arquivos não se misturam.
+- **Perfil do Chrome por vaga.** O Chrome não abre a mesma pasta de perfil duas vezes. A primeira execução de um tipo usa `perfis/<automação>`; uma segunda do mesmo tipo, ao mesmo tempo, usa `perfis/<automação>_2` (e avisa no log). Esse perfil começa sem sessão salva, então faz login do zero.
+- **A lista fica na memória.** Ao reiniciar o painel, ela some, mas os logs e relatórios continuam em `logs/` e `relatorios/`.
+- **Evite o mesmo credenciado em duas execuções que alteram o portal** (ex.: ativador e taxas no mesmo código): o painel não confere isso.
 
 ## Estrutura
 
@@ -58,7 +69,7 @@ rotas/                      # uma blueprint por funcionalidade
   taxa.py                   # /taxas (/alt-taxa redireciona para ela)
   acesso.py                 # /acessos
   upload.py                 # confere a planilha enviada pelo formulário
-  execucao.py               # /status, /api/status, /stop, /download_relatorio
+  execucao.py               # /status (lista), /status/<id>, /api/status, /stop/<id>, /download_relatorio/<id>
 automacoes/
   core/                     # comum a todas as automações
     seletores.py            # seletores do portal (MAPEAR = XPath absoluto a melhorar)
@@ -68,7 +79,7 @@ automacoes/
     erros.py                # ErroAutomacao, LoginFalhou, CredenciadoNaoEncontrado...
     apex.py                 # aguardar_apex(), apex_ocioso(), ler_valor(), confirmar_messagebox()
     status_execucao.py      # class StatusExecucao
-    execucao.py             # uma execução por vez: iniciar(), atual(), em_execucao()
+    execucao.py             # execuções simultâneas (até EXECUCOES_SIMULTANEAS): iniciar(), buscar(), todas()
     navegador.py            # class Navegador (Chrome persistente, screenshot, trace)
     portal_infox.py         # class PortalInfox (login, menu, pesquisa, contratos, consulta de transações)
     automacao_base.py       # AutomacaoBase (ciclo de vida, erro por item) e AutomacaoPorItem (relatório a cada item)
@@ -88,7 +99,7 @@ automacoes/
     relatorio_coleta.py     # planilha com as abas Resumo e Coleta (layout da versão Selenium)
     planilha_coleta.py      # gerar_modelo() (planilha modelo)
   conciliacao/
-    conciliacao.py          # class Conciliacao(AutomacaoPorItem) e as opções da tela (CONCILIACOES)
+    conciliacao.py          # class Conciliacao(AutomacaoPorItem)
     planilha_conciliacao.py # gerar_modelo() (planilha modelo)
   taxa/
     item_taxa.py            # class ItemTaxa (credenciado + plano pedido) e a validação dos valores
@@ -102,6 +113,7 @@ automacoes/
     planilha_acesso.py      # gerar_modelo() (planilha modelo)
 templates/                  # telas vindas do painel Selenium, só as migradas
   _menu.html                # barra superior de todas as telas (a lista TELAS é o menu)
+  execucoes.html            # lista das execuções (/status); status.html é a página de uma execução
 static/css/
   styles.css                # estilo original do painel Selenium
   tema.css                  # tema visual deste painel (ver "Visual" abaixo)
@@ -186,7 +198,7 @@ Diferenças em relação à versão Selenium:
 
 ## Conciliação
 
-Altera dados no portal (`/conciliacao`). Na tela, escolha a **nova conciliação** (as mesmas quatro opções do painel Selenium). Ela vale para todos os credenciados. Para cada um:
+Altera dados no portal (`/conciliacao`). Na tela, digite a **nova conciliação** com o nome que ela tem na lista do portal (ex.: `CONCILIACAO DE VENDAS - PADRÃO`). Ela vale para todos os credenciados. Para cada um:
 
 1. Pesquisa e confere o credenciado. Uma lista de resultados ou outro credenciado vira erro, sem alterar nada.
 2. Clica em **Alterar configuração EDI** e escolhe a opção com o nome pedido, sem diferença de acento ou maiúscula. Se o portal não tiver a opção, o item vira erro com a lista das opções que existem.
@@ -200,6 +212,7 @@ Diferenças em relação à versão Selenium:
 
 - **Um credenciado ou planilha**, e pesquisa por CPF. O tipo de pesquisa começa em Código, e não em CNPJ: a planilha usada no Selenium (`uploads/conciliacao.xlsx`) tinha códigos.
 - **Credenciado conferido.** O Selenium não conferia se a pesquisa tinha achado o credenciado e seguia para o botão de alterar.
+- **Conciliação digitada.** O Selenium só oferecia quatro opções fixas (SPANI, SHIBATA, SEMAR e PADRÃO). Agora vale qualquer opção que o portal tenha.
 - **Opção pelo texto, sem acento nem maiúscula.** O Selenium montava um XPath com o texto exato; com outra grafia, dava erro de tempo.
 - **Não salva o que já está certo**, e o relatório diz isso.
 - **Salvamento conferido.** O Selenium esperava 2 segundos depois do OK e dava sucesso. Agora: a conciliação precisa aparecer na tela do credenciado. Uma mensagem de erro do portal vira `ERRO` com o texto dela. Se a tela de configuração continuar aberta com a conciliação pedida, vira `AVISO` para conferir.
@@ -281,13 +294,13 @@ O que muda em relação à original:
 
 1. Crie `automacoes/<funcionalidade>/` com uma classe que herda de `AutomacaoBase` e implementa `processar_item()`, mais `gerar_relatorio()` e `registrar_falha()` se precisar de planilha.
 2. Seletores novos vão em `automacoes/core/seletores.py`. Ações de portal que mais de uma automação usa vão em `PortalInfox`.
-3. Crie `rotas/<funcionalidade>.py` com uma blueprint que lê o formulário e chama `execucao.iniciar("<nome>", criar_automacao)`, e registre-a em `rotas/__init__.py`.
+3. Crie `rotas/<funcionalidade>.py` com uma blueprint que lê o formulário e termina com `return iniciar_e_acompanhar("<nome>", criar_automacao)` (de `rotas/execucao.py`), e registre-a em `rotas/__init__.py`.
 4. Copie o template do painel Selenium, troque o `<nav class="topbar">` por `{% include "_menu.html" %}` e acrescente no `<head>` o link do `tema.css`, depois do `<style>` da página. Acrescente a tela na lista `TELAS` de `templates/_menu.html` e um cartão em `templates/index.html`.
 5. Rode a mesma entrada nos dois painéis e compare os relatórios antes de aposentar a versão Selenium.
 
 ## Logs e saídas
 
-- `logs/<automação>_<data>.txt`: log da execução, com os tracebacks dos erros.
+- `logs/<id da execução>.txt` (`<automação>_<data>_<hora>`): log da execução, com os tracebacks dos erros.
 - `logs/*.png`: captura da tela de cada item com erro e do primeiro aviso.
 - `logs/*_trace.zip`: trace do Playwright (conforme `SALVAR_TRACE`).
 - `relatorios/`:

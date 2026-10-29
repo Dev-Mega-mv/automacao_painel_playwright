@@ -1,12 +1,19 @@
+import threading
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
 import config
 
+_trava_perfis = threading.Lock()
+_perfis_em_uso: set[str] = set()  # pastas de perfis/ abertas por um Chrome deste painel agora
+
 
 class Navegador:
     """Chrome instalado na máquina, com perfil persistente por automação.
+
+    Se outra execução da mesma automação já estiver com o perfil aberto (o Chrome não abre a
+    mesma pasta duas vezes), usa perfis/<automação>_2, _3...
 
     Uso:
         with Navegador("habilitacao", status, prefixo="habilitacao_20261027_101500") as nav:
@@ -20,6 +27,7 @@ class Navegador:
         self.status = status
         self.prefixo = prefixo
         self.houve_erro = False
+        self._pasta_perfil = None
         self._playwright = None
         self._contexto = None
         self._trace_ativo = False
@@ -28,9 +36,12 @@ class Navegador:
     def __enter__(self):
         self.status.log("Abrindo o Chrome...")
         self._playwright = sync_playwright().start()
+        self._pasta_perfil = _reservar_perfil(self.perfil)
+        if self._pasta_perfil != self.perfil:
+            self.status.log(f"Outra execução está com o perfil {self.perfil} aberto; usando perfis/{self._pasta_perfil}.")
         try:
             self._contexto = self._playwright.chromium.launch_persistent_context(
-                str(config.PASTA_PERFIS / self.perfil),
+                str(config.PASTA_PERFIS / self._pasta_perfil),
                 channel="chrome",
                 headless=config.HEADLESS,
                 no_viewport=True,
@@ -39,6 +50,7 @@ class Navegador:
             )
         except Exception:
             self._playwright.stop()
+            self._liberar_perfil()
             raise
 
         self._contexto.set_default_timeout(config.TIMEOUT_PADRAO_MS)
@@ -89,6 +101,13 @@ class Navegador:
         if self._playwright is not None:
             self._playwright.stop()
             self._playwright = None
+        self._liberar_perfil()
+
+    def _liberar_perfil(self):
+        if self._pasta_perfil is not None:
+            with _trava_perfis:
+                _perfis_em_uso.discard(self._pasta_perfil)
+            self._pasta_perfil = None
 
     def _parar_trace(self, houve_erro: bool):
         if not self._trace_ativo:
@@ -104,6 +123,17 @@ class Navegador:
         except Exception:
             pass
         self._trace_ativo = False
+
+
+def _reservar_perfil(perfil: str) -> str:
+    """A pasta do perfil, ou a primeira de perfil_2, perfil_3... que nenhuma execução esteja usando."""
+    with _trava_perfis:
+        pasta, numero = perfil, 1
+        while pasta in _perfis_em_uso:
+            numero += 1
+            pasta = f"{perfil}_{numero}"
+        _perfis_em_uso.add(pasta)
+        return pasta
 
 
 def _nome_seguro(texto: str) -> str:

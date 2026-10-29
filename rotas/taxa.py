@@ -3,11 +3,11 @@ import io
 
 from flask import Blueprint, flash, redirect, render_template, request, send_file, url_for
 
-from automacoes.core import execucao
 from automacoes.core.texto import normalizar_codigo_pesquisa
 from automacoes.taxa import (BANCARIZAR, DIAS_SEMANA, LIMITE_ERROS_SEGUIDOS, PERIODICIDADES, TIPOS_DIA,
                              AlteracaoTaxa, ItemTaxa, gerar_modelo, ler_itens)
 
+from .execucao import iniciar_e_acompanhar
 from .upload import origem_da_planilha, planilha_enviada
 
 bp = Blueprint("taxa", __name__)
@@ -95,6 +95,4 @@ def taxas():
             status.log(origem)
         return AlteracaoTaxa({"login_infox": login, "senha_infox": senha}, itens, status, tipo_pesquisa=tipo_pesquisa)
 
-    if execucao.iniciar("taxa", criar_automacao) is None:
-        flash("Já existe uma automação em execução. Aguarde finalizar ou peça para parar antes de iniciar outra.")
-    return redirect(url_for("execucao.status"))
+    return iniciar_e_acompanhar("taxa", criar_automacao)

@@ -4,11 +4,11 @@ from datetime import date
 
 from flask import Blueprint, flash, redirect, render_template, request, send_file, url_for
 
-from automacoes.core import execucao
 from automacoes.core.planilha import ler_codigos
 from automacoes.core.texto import normalizar_codigo_pesquisa
 from automacoes.extrator import FUNCIONALIDADES, ExtratorCadastro, ExtratorTransacoes, gerar_modelo
 
+from .execucao import iniciar_e_acompanhar
 from .upload import origem_da_planilha, planilha_enviada
 
 bp = Blueprint("extrator", __name__)
@@ -103,6 +103,4 @@ def extrator():
             )
         return ExtratorCadastro(credenciais, codigos, status, tipo_pesquisa=tipo_pesquisa)
 
-    if execucao.iniciar("extrator", criar_automacao) is None:
-        flash("Já existe uma automação em execução. Aguarde finalizar ou peça para parar antes de iniciar outra.")
-    return redirect(url_for("execucao.status"))
+    return iniciar_e_acompanhar("extrator", criar_automacao)

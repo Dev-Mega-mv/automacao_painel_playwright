@@ -3,10 +3,10 @@ import io
 
 from flask import Blueprint, flash, redirect, render_template, request, send_file, url_for
 
-from automacoes.core import execucao
 from automacoes.core.texto import normalizar_codigo_pesquisa
 from automacoes.habilitacao import Habilitacao, ItemHabilitacao, gerar_modelo, ler_itens
 
+from .execucao import iniciar_e_acompanhar
 from .upload import origem_da_planilha, planilha_enviada
 
 bp = Blueprint("habilitacao", __name__)
@@ -106,6 +106,4 @@ def ativador():
             cardse_statuses=form.getlist("cardse_statuses"),
         )
 
-    if execucao.iniciar("habilitacao", criar_automacao) is None:
-        flash("Já existe uma automação em execução. Aguarde finalizar ou peça para parar antes de iniciar outra.")
-    return redirect(url_for("execucao.status"))
+    return iniciar_e_acompanhar("habilitacao", criar_automacao)

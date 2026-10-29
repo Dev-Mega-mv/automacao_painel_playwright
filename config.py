@@ -32,5 +32,8 @@ TIMEOUT_PADRAO_MS = int(os.getenv("TIMEOUT_PADRAO_MS", "15000"))
 ESPERA_CAPTCHA_S = int(os.getenv("ESPERA_CAPTCHA_S", "120"))
 SALVAR_TRACE = os.getenv("SALVAR_TRACE", "erro")  # "sempre" | "erro" | "nunca"
 
+# Execuções
+EXECUCOES_SIMULTANEAS = int(os.getenv("EXECUCOES_SIMULTANEAS", "3"))  # cada Chrome usa de 300 a 500 MB de memória
+
 for _pasta in (PASTA_PERFIS, PASTA_LOGS, PASTA_RELATORIOS):
     _pasta.mkdir(exist_ok=True)

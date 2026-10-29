@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Execuções — Painel de Automações</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css">
+  <style>
+    .resumo-execucoes {
+      margin-bottom: 1rem;
+    }
+
+    .lista-execucoes {
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+    }
+
+    .execucao-linha {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 200px auto;
+      align-items: center;
+      gap: 1.1rem;
+      padding: 1rem 1.2rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      color: inherit;
+      text-decoration: none;
+      transition: box-shadow .2s, border-color .2s;
+    }
+
+    .execucao-linha:hover {
+      border-color: var(--blue-300);
+      box-shadow: var(--shadow-md);
+    }
+
+    .execucao-titulo {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .execucao-id {
+      margin-top: 2px;
+      font-family: 'Courier New', monospace;
+      font-size: .74rem;
+      color: var(--text-secondary);
+      word-break: break-all;
+    }
+
+    .execucao-item {
+      margin-top: 4px;
+      font-size: .8rem;
+      color: var(--text-secondary);
+      word-break: break-all;
+    }
+
+    .barra {
+      height: 8px;
+      background: var(--blue-100);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .barra>span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue-500), var(--accent));
+      border-radius: 99px;
+    }
+
+    .barra-legenda {
+      display: flex;
+      justify-content: space-between;
+      gap: .5rem;
+      margin-top: 5px;
+      font-size: .74rem;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .execucao-lado {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .relatorio-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: .76rem;
+      color: #065f46;
+    }
+
+    .sem-execucoes {
+      padding: 2.5rem 1rem;
+      text-align: center;
+      color: var(--text-secondary);
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+    }
+
+    @media(max-width:640px) {
+      .execucao-linha {
+        grid-template-columns: 1fr;
+        gap: .75rem;
+      }
+
+      .execucao-lado {
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tema.css') }}">
+</head>
+
+<body>
+  {% include "_menu.html" %}
+
+  <div class="main-container">
+    <div class="page-header">
+      <span class="page-eyebrow"><i class="bi bi-activity"></i> Execuções</span>
+      <h1>Status das Automações</h1>
+      <p>Até {{ limite }} automações ao mesmo tempo. Abra uma para ver o log, parar ou baixar o relatório.</p>
+    </div>
+
+    <div class="flash-container">
+      {% with messages = get_flashed_messages() %}{% if messages %}
+      {% for msg in messages %}<div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill"></i> {{ msg
+        }}</div>{% endfor %}
+      {% endif %}{% endwith %}
+    </div>
+
+    <div class="resumo-execucoes">
+      <span class="status-pill" id="resumo" data-estado="parado">Consultando…</span>
+    </div>
+
+    <div class="lista-execucoes" id="lista"></div>
+  </div>
+
+  <footer>Painel de Automações — Megavale © 2026</footer>
+
+  <script>
+    const lista = document.getElementById('lista');
+    const resumo = document.getElementById('resumo');
+
+    function esc(texto) {
+      const div = document.createElement('div');
+      div.textContent = texto ?? '';
+      return div.innerHTML;
+    }
+
+    function estado(e) {
+      if (e.running) return e.request_stop ? ['rodando', 'Parando…'] : ['rodando', 'Em execução'];
+      return e.request_stop ? ['parado', 'Interrompida'] : ['concluido', 'Encerrada'];
+    }
+
+    function linha(e) {
+      const [codigo, texto] = estado(e);
+      const item = e.running && e.current_item ? `<div class="execucao-item">🔄 ${esc(e.current_item)}</div>` : '';
+      const quando = e.inicio ? `${e.inicio} · ${e.duracao}` : 'começando…';
+      const relatorio = e.tem_relatorio
+        ? '<span class="relatorio-tag"><i class="bi bi-file-earmark-check-fill"></i> Relatório</span>' : '';
+      return `<a class="execucao-linha" href="${esc(e.url)}">
+        <div>
+          <div class="execucao-titulo">${esc(e.titulo)}</div>
+          <div class="execucao-id">${esc(e.id)}</div>
+          ${item}
+        </div>
+        <div>
+          <div class="barra"><span style="width:${e.progress}%"></span></div>
+          <div class="barra-legenda"><span>${e.processed}/${e.total}</span><span>${esc(quando)}</span></div>
+        </div>
+        <div class="execucao-lado">
+          <span class="status-pill" data-estado="${codigo}">${texto}</span>
+          ${relatorio}
+        </div>
+      </a>`;
+    }
+
+    async function poll() {
+      try {
+        const d = await (await fetch("{{ url_for('execucao.api_status') }}")).json();
+        resumo.dataset.estado = d.em_execucao ? 'rodando' : 'parado';
+        resumo.textContent = d.em_execucao
+          ? `${d.em_execucao} de ${d.limite} em execução`
+          : 'Nenhuma automação em execução';
+        lista.innerHTML = d.execucoes.length
+          ? d.execucoes.map(linha).join('')
+          : '<div class="sem-execucoes">Nenhuma automação foi iniciada desde que o painel abriu.</div>';
+      } catch (e) {
+        console.warn('Erro no poll:', e);
+      }
+      setTimeout(poll, 2000);
+    }
+
+    poll();
+  </script>
+</body>
+
+</html>

@@ -6,13 +6,6 @@ from ..core.automacao_base import AutomacaoPorItem
 from ..core.erros import ErroAutomacao
 from ..core.texto import sem_acento_maiusculo
 
-# Opções da tela, as mesmas do painel Selenium (templates/alt_conciliacao.html)
-CONCILIACOES = (
-    "CONCILIACAO DE VENDAS - SPANI ATACADISTA",
-    "CONCILIACAO DE VENDAS - SHIBATA SUPERMERCADOS",
-    "CONCILIACAO DE VENDAS - SEMAR SUPERMERCADOS",
-    "CONCILIACAO DE VENDAS - PADRÃO",
-)
 JA_ESTAVA = "OK (já estava com a conciliação pedida; nada foi salvo)"
 
 _JS_OPCOES = "el => [...el.options].map(o => [o.value, o.text.trim()])"
@@ -26,7 +19,7 @@ class Conciliacao(AutomacaoPorItem):
     """Troca a conciliação de vendas EDI de cada credenciado (botão "Alterar configuração EDI", página 2310).
 
     Como na versão Selenium (alt_conciliacao.py): pesquisa, abre a configuração EDI, escolhe a
-    conciliação e salva com OK. Além dela:
+    conciliação e salva com OK. A conciliação é digitada na tela (o Selenium tinha quatro opções fixas). Além dela:
       - o credenciado é conferido antes (lista de resultados ou outro credenciado = erro, nada é alterado);
       - a opção é escolhida pelo texto, sem diferença de acento ou maiúscula; se não existir, nada é alterado;
       - se já estiver com a conciliação pedida, não salva;

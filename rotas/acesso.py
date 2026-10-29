@@ -4,10 +4,10 @@ import io
 from flask import Blueprint, flash, redirect, render_template, request, send_file, url_for
 
 from automacoes.acesso import CriacaoAcesso, gerar_modelo
-from automacoes.core import execucao
 from automacoes.core.planilha import ler_codigos
 from automacoes.core.texto import normalizar_codigo_pesquisa
 
+from .execucao import iniciar_e_acompanhar
 from .upload import origem_da_planilha, planilha_enviada
 
 bp = Blueprint("acesso", __name__)
@@ -80,6 +80,4 @@ def acessos():
         return CriacaoAcesso(credenciais, codigos, status, tipo_pesquisa=tipo_pesquisa,
                              somente_verificar=modo == "verificar")
 
-    if execucao.iniciar("criacao_acesso", criar_automacao) is None:
-        flash("Já existe uma automação em execução. Aguarde finalizar ou peça para parar antes de iniciar outra.")
-    return redirect(url_for("execucao.status"))
+    return iniciar_e_acompanhar("criacao_acesso", criar_automacao)

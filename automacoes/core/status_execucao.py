@@ -12,8 +12,11 @@ class StatusExecucao:
     então /status, /api/status e /download_relatorio funcionam sem mudança.
     """
 
-    def __init__(self, nome: str, arquivo_log: Path | None = None):
+    def __init__(self, nome: str, arquivo_log: Path | None = None, carimbo: str | None = None):
         self.nome = nome
+        self.carimbo = carimbo or f"{datetime.now():%Y%m%d_%H%M%S}"  # também no nome do relatório e das capturas
+        self.id = f"{nome}_{self.carimbo}"
+        self.titulo = nome  # a automação troca pelo título dela ao começar
         self.arquivo_log = arquivo_log
         self._trava = threading.Lock()
         self._running = False
@@ -32,8 +35,10 @@ class StatusExecucao:
         with self._trava:
             self._running = True
 
-    def iniciar(self, total: int):
+    def iniciar(self, total: int, titulo: str | None = None):
         with self._trava:
+            if titulo:
+                self.titulo = titulo
             self._running = True
             self._total = total
             self._processados = 0

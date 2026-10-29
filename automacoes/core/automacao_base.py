@@ -1,5 +1,4 @@
 import traceback
-from datetime import datetime
 from pathlib import Path
 
 from playwright.sync_api import Error as PlaywrightError
@@ -33,7 +32,7 @@ class AutomacaoBase:
         self.credenciais = credenciais
         self.itens = itens
         self.status = status
-        self.carimbo = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.carimbo = status.carimbo  # o mesmo do ID da execução, que não repete entre execuções simultâneas
         self.navegador: Navegador | None = None
         self.portal: PortalInfox | None = None
         self.page = None
@@ -63,7 +62,7 @@ class AutomacaoBase:
     # --- ciclo de vida -------------------------------------------------
     def executar(self):
         status = self.status
-        status.iniciar(total=len(self.itens))
+        status.iniciar(total=len(self.itens), titulo=self.titulo)
         status.log(f"{self.titulo} iniciada com {len(self.itens)} item(ns). Motor: Playwright.")
         try:
             with Navegador(self.nome, status, prefixo=f"{self.nome}_{self.carimbo}") as navegador:

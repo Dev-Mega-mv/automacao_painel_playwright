@@ -229,13 +229,11 @@
         <div class="card-body">
           <div class="form-group">
             <label for="nomeConciliacao">Nova conciliação</label>
-            <select name="nome_conciliacao" id="nomeConciliacao" required>
-              {% for opcao in conciliacoes %}
-              <option value="{{ opcao }}"{% if loop.first %} selected{% endif %}>{{ opcao }}</option>
-              {% endfor %}
-            </select>
-            <div class="hint">Vale para todos os credenciados. O robô escolhe a opção com esse nome na lista do portal.
-            </div>
+            <input type="text" name="nome_conciliacao" id="nomeConciliacao"
+              placeholder="Ex: CONCILIACAO DE VENDAS - PADRÃO" required>
+            <div class="hint">Vale para todos os credenciados. Digite o nome como está na lista do portal (acento e
+              maiúscula não fazem diferença). Se o portal não tiver essa opção, nada é alterado e o relatório mostra as
+              opções que existem.</div>
           </div>
 
           <div class="modo-info altera">

@@ -1,7 +1,4 @@
-"""Painel de automações Playwright (porta 8082).
-
-Só tem as telas já migradas. As demais continuam no painel Selenium (automacao_painel, porta 8081).
-"""
+"Painel de automações Playwright (porta 8082)."
 from flask import Flask
 
 import config

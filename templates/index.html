@@ -236,7 +236,7 @@
       <a href="{{ url_for('execucao.status') }}" class="action-card card-status">
         <div class="icon-wrap"><i class="bi bi-activity"></i></div>
         <h3>Status</h3>
-        <p>Progresso, logs em tempo real e download do relatório da última execução.</p>
+        <p>Progresso, logs em tempo real e download do relatório de cada execução.</p>
         <span class="status-pill" id="statusResumo" data-estado="parado">Consultando…</span>
         <span class="arr">Acompanhar <i class="bi bi-arrow-right"></i></span>
       </a>
@@ -250,10 +250,14 @@
       .then(r => r.json())
       .then(d => {
         const pill = document.getElementById('statusResumo');
-        if (d.running) {
+        const rodando = d.execucoes.filter(e => e.running);
+        if (rodando.length === 1) {
           pill.dataset.estado = 'rodando';
-          pill.textContent = `Em execução · ${d.progress}%`;
-        } else if (d.processed > 0) {
+          pill.textContent = `Em execução · ${rodando[0].progress}%`;
+        } else if (rodando.length > 1) {
+          pill.dataset.estado = 'rodando';
+          pill.textContent = `${rodando.length} em execução`;
+        } else if (d.execucoes.length) {
           pill.dataset.estado = 'concluido';
           pill.textContent = 'Última execução concluída';
         } else {

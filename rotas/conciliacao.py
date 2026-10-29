@@ -3,11 +3,11 @@ import io
 
 from flask import Blueprint, flash, redirect, render_template, request, send_file, url_for
 
-from automacoes.conciliacao import CONCILIACOES, Conciliacao, gerar_modelo
-from automacoes.core import execucao
+from automacoes.conciliacao import Conciliacao, gerar_modelo
 from automacoes.core.planilha import ler_codigos
 from automacoes.core.texto import normalizar_codigo_pesquisa
 
+from .execucao import iniciar_e_acompanhar
 from .upload import origem_da_planilha, planilha_enviada
 
 bp = Blueprint("conciliacao", __name__)
@@ -43,8 +43,7 @@ def modelo_planilha():
 @bp.route("/conciliacao", methods=["GET", "POST"])
 def conciliacao():
     if request.method == "GET":
-        return render_template("conciliacao.html", entrada=_entrada(request.args.get("entrada")),
-                               conciliacoes=CONCILIACOES)
+        return render_template("conciliacao.html", entrada=_entrada(request.args.get("entrada")))
 
     form = request.form
     entrada = _entrada(form.get("entrada"))
@@ -52,7 +51,7 @@ def conciliacao():
     senha = form.get("senha_infox", "").strip()
     tipo_pesquisa = form.get("tipo_pesquisa", "COD").strip().upper()
     cod_cnpj = form.get("cod_cnpj", "").strip()
-    nome_conciliacao = form.get("nome_conciliacao", "").strip()
+    nome_conciliacao = " ".join(form.get("nome_conciliacao", "").split())
 
     if entrada == "unico" and not cod_cnpj:
         flash("Informe o código ou CNPJ.")
@@ -60,8 +59,8 @@ def conciliacao():
     if not login or not senha:
         flash("Login e senha são obrigatórios.")
         return _voltar(entrada)
-    if nome_conciliacao not in CONCILIACOES:
-        flash("Escolha a conciliação na lista.")
+    if not nome_conciliacao:
+        flash("Informe a nova conciliação.")
         return _voltar(entrada)
 
     try:
@@ -82,6 +81,4 @@ def conciliacao():
         return Conciliacao({"login_infox": login, "senha_infox": senha}, codigos, status,
                            conciliacao=nome_conciliacao, tipo_pesquisa=tipo_pesquisa)
 
-    if execucao.iniciar("conciliacao", criar_automacao) is None:
-        flash("Já existe uma automação em execução. Aguarde finalizar ou peça para parar antes de iniciar outra.")
-    return redirect(url_for("execucao.status"))
+    return iniciar_e_acompanhar("conciliacao", criar_automacao)

@@ -307,9 +307,9 @@
 
   <div class="main-container">
     <div class="page-header">
-      <span class="page-eyebrow"><i class="bi bi-activity"></i> Execução atual</span>
+      <span class="page-eyebrow"><i class="bi bi-activity"></i> Execução</span>
       <h1>Status da Automação</h1>
-      <p>Acompanhe o progresso em tempo real.</p>
+      <p><span id="tituloExecucao">{{ execucao.titulo }}</span> · {{ execucao.id }}</p>
     </div>
 
     <div class="flash-container">
@@ -356,18 +356,18 @@
               <i class="bi bi-file-earmark-check-fill" style="color:#10b981;font-size:1rem;"></i>
               Relatório pronto!
             </div>
-            <a href="/download_relatorio" class="btn-download">
+            <a href="{{ url_for('execucao.download_relatorio', id_execucao=execucao.id) }}" class="btn-download">
               <i class="bi bi-download"></i> Baixar Planilha (.xlsx)
             </a>
           </div>
 
           <!-- Controles -->
           <div class="controls">
-            <a href="/stop" class="btn btn-danger" style="flex:1;text-align:center;" id="btnStop">
+            <a href="{{ url_for('execucao.stop', id_execucao=execucao.id) }}" class="btn btn-danger" style="flex:1;text-align:center;" id="btnStop">
               <i class="bi bi-stop-fill"></i> Parar
             </a>
-            <a href="{{ url_for('inicio.index') }}" class="btn btn-secondary" style="flex:1;text-align:center;">
-              <i class="bi bi-arrow-left"></i> Voltar
+            <a href="{{ url_for('execucao.status') }}" class="btn btn-secondary" style="flex:1;text-align:center;">
+              <i class="bi bi-arrow-left"></i> Execuções
             </a>
           </div>
         </div>
@@ -417,8 +417,15 @@
 
     async function poll() {
       try {
-        const r = await fetch('/api/status');
+        const r = await fetch("{{ url_for('execucao.api_status_execucao', id_execucao=execucao.id) }}");
+        if (r.status === 404) {  // o painel foi reiniciado: a execução não está mais na memória
+          document.getElementById('ringStatus').textContent = 'não encontrada';
+          document.getElementById('btnStop').style.pointerEvents = 'none';
+          document.getElementById('btnStop').style.opacity = '.4';
+          return;
+        }
         const d = await r.json();
+        document.getElementById('tituloExecucao').textContent = d.titulo;
 
         // Ring & stats
         updateRing(d.progress || 0);

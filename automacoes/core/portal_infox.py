@@ -49,6 +49,8 @@ class PortalInfox:
         self._aguardar_resultado_do_login()
         self.log("Login realizado.")
 
+        time.sleep(3)
+
     def _digitar(self, seletor: str, texto: str):
         campo = self.page.locator(seletor)
         campo.fill("")

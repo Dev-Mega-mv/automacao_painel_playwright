@@ -392,7 +392,7 @@ No painel Playwright, `/individual` e `/lote` viraram uma tela só, `/ativador`.
 
 A `/coleta` do painel Playwright recebe `entrada` (`unico` ou `planilha`), `tipo_pesquisa` (`COD`, `CPF` ou `CNPJ`), `origem_transacao` (padrão `CARDSE`) e `cod_cnpj` ou `file`. `/coleta/modelo-planilha` baixa a planilha modelo. Diferenças em relação ao Selenium no `README.md`, seção "Coleta".
 
-A `/conciliacao` do painel Playwright recebe `entrada`, `tipo_pesquisa` (`COD`, `CPF` ou `CNPJ`; começa em `COD`), `nome_conciliacao` (uma das quatro opções) e `cod_cnpj` ou `file`. `/conciliacao/modelo-planilha` baixa a planilha modelo. Diferenças no `README.md`, seção "Conciliação".
+A `/conciliacao` do painel Playwright recebe `entrada`, `tipo_pesquisa` (`COD`, `CPF` ou `CNPJ`; começa em `COD`), `nome_conciliacao` (texto digitado: o nome da opção na lista do portal) e `cod_cnpj` ou `file`. `/conciliacao/modelo-planilha` baixa a planilha modelo. Diferenças no `README.md`, seção "Conciliação".
 
 A `/taxas` do painel Playwright recebe `entrada`, `tipo_pesquisa`, `cod_cnpj` ou `file` e o plano: `taxa`, `pag_dias`, `periodicidade`, `dia1`, `dia2`, `dias_semana[]`, `tipo_dia` e `bancarizar`. O `mode` (`individual`/`lote`) virou `entrada`. Com planilha, o plano da tela vale para as células vazias. `/taxas/modelo-planilha` baixa a planilha modelo. Diferenças no `README.md`, seção "Taxas".
 
@@ -446,7 +446,7 @@ automacao_painel_playwright/
       erros.py                  # ErroAutomacao, LoginFalhou, CredenciadoNaoEncontrado...
       apex.py                   # aguardar_apex(), apex_ocioso(), ler_valor(), confirmar_messagebox()
       status_execucao.py        # class StatusExecucao (thread-safe, formato do /api/status)
-      execucao.py               # uma execução por vez: iniciar(), atual(), em_execucao()
+      execucao.py               # execuções simultâneas com limite: iniciar(), buscar(), todas()
       navegador.py              # class Navegador (Chrome persistente, screenshot, trace)
       portal_infox.py           # class PortalInfox (login, menu, pesquisa, contratos, consulta de transações)
       automacao_base.py         # AutomacaoBase (ciclo de vida, erro por item) e AutomacaoPorItem (relatório a cada item)
@@ -466,7 +466,7 @@ automacao_painel_playwright/
       taxa.py                   # class AlteracaoTaxa(AutomacaoPorItem)
       planilha_taxa.py          # ler_itens() e gerar_modelo()
     conciliacao/                # 5.6
-      conciliacao.py            # class Conciliacao(AutomacaoPorItem) e CONCILIACOES
+      conciliacao.py            # class Conciliacao(AutomacaoPorItem)
       planilha_conciliacao.py   # gerar_modelo()
     extrator/                   # 5.7 e 5.8
       extrator_base.py          # class ExtratorBase(AutomacaoPorItem)
@@ -1104,7 +1104,7 @@ python -m playwright install chromium
 **Cuidados:**
 
 - Não use o perfil normal do Chrome do usuário em `launch_persistent_context`: ele fica travado enquanto o Chrome estiver aberto. Use `perfis/<automação>`.
-- Um perfil não pode ser aberto por dois Chromes ao mesmo tempo. Com uma automação por vez, isso não acontece.
+- Um perfil não pode ser aberto por dois Chromes ao mesmo tempo. Com execuções simultâneas, a segunda do mesmo tipo usa `perfis/<automação>_2` (`navegador.py`).
 - Rode o Flask sem `debug=True`. O recarregador cria um segundo processo, e o Playwright não deve ser criado fora da thread da execução.
 - Coloque `perfis/`, `logs/`, `relatorios/` e `uploads/` no `.gitignore`.
 
