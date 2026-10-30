@@ -35,8 +35,9 @@ Tudo em `config.py`, com a opção de trocar por variável de ambiente:
 | Variável | Padrão | Para quê |
 | --- | --- | --- |
 | `PORTA` | `8082` | Porta deste painel |
-| `HEADLESS` | `0` | `1` roda o Chrome sem janela |
-| `ESPERA_CAPTCHA_S` | `120` | Tempo para resolver o captcha à mão se o login não passar sozinho |
+| `HEADLESS` | `0` | `1` roda o Chrome sem janela (é o caso do Docker) |
+| `TAMANHO_JANELA` | vazio (maximizada); `1600,1000` com `HEADLESS=1` | Largura e altura da janela do Chrome |
+| `ESPERA_CAPTCHA_S` | `120` | Tempo para resolver o captcha à mão se o login não passar sozinho. Com `HEADLESS=1` não há espera |
 | `SALVAR_TRACE` | `erro` | `sempre`, `erro` ou `nunca`. O trace abre com `python -m playwright show-trace logs/<arquivo>.zip` |
 | `EXECUCOES_SIMULTANEAS` | `3` | Quantas automações podem rodar ao mesmo tempo (cada Chrome usa de 300 a 500 MB) |
 | `FLASK_DEBUG` | `0` | `1` liga o modo debug. Com ele, salvar um `.py` reinicia o Flask e derruba a automação em andamento |
@@ -44,6 +45,44 @@ Tudo em `config.py`, com a opção de trocar por variável de ambiente:
 | `URL_MEGAVALE` | painel Megavale (`https://app.megavalecard.com.br/`) | Painel administrativo usado pela criação de acesso |
 
 Exemplo: `$env:SALVAR_TRACE = "sempre"; python app.py`
+
+## No servidor (Docker)
+
+Para os funcionários usarem só pelo navegador, sem Python na máquina. O container traz o Python, o Google Chrome (sem janela) e o painel servido pelo waitress.
+
+**Subir pela primeira vez** (no servidor, com Docker e acesso à internet):
+
+```bash
+git clone https://github.com/Dev-Mega-mv/automacao_painel_playwright.git   # repositório privado: pede usuário e token do GitHub
+cd automacao_painel_playwright
+docker compose up -d --build        # a primeira vez demora (a imagem tem uns 2 GB)
+```
+
+Abra `http://<ip-do-servidor>:8082`. Para usar outra porta, crie um `.env` ao lado do `docker-compose.yml` com `PORTA_HOST=8090`. Também dá para trocar `EXECUCOES_SIMULTANEAS`, `SALVAR_TRACE` e `LIMITE_MEMORIA` (padrão `3g`) por ali.
+
+**Atualizar** depois de um `git push` feito aqui:
+
+```bash
+cd automacao_painel_playwright
+git pull
+docker compose up -d --build
+```
+
+Reiniciar o container derruba as automações que estiverem rodando: confira o `/status` antes.
+
+**No dia a dia:**
+
+- `docker compose logs -f` mostra a saída do painel. Os logs de cada execução, as capturas e os relatórios ficam em `dados/logs` e `dados/relatorios`, e os perfis do Chrome em `dados/perfis`. Eles ficam fora do container e sobrevivem às atualizações.
+- `dados/` guarda dados de credenciados e cresce a cada execução. Apague o que for antigo de tempos em tempos (ex.: `find dados/logs dados/relatorios -type f -mtime +30 -delete`).
+- O Chrome roda sem janela, então ninguém consegue resolver o captcha à mão. Se o login não passar sozinho, a execução para com `ERRO` em 15 segundos, sem a espera de 2 minutos.
+
+**Bloqueio atual: o captcha da Infox.** A tela de login da Infox usa o Cloudflare Turnstile. No container, sem janela, ele não se resolve sozinho: pede o clique em "Verify you are human" (teste de 29/10/2026, passo 23 em `modificacoes/`). Então, hoje, **as automações da Infox não conseguem logar no container**. A criação de acesso também depende da Infox. Saídas possíveis: a Infox dispensar o captcha para o servidor (ou oferecer uma API), ou o Chrome com janela numa tela virtual, com uma pessoa vendo e clicando no captcha quando ele aparecer.
+
+**Cuidados antes de abrir para a empresa:**
+
+- O painel **não tem login**: qualquer pessoa que chegue à porta vê os logs e baixa os relatórios. Libere a porta só para a rede interna.
+- Sem HTTPS, as senhas da Infox e do painel Megavale digitadas nas telas trafegam abertas na rede.
+- Os perfis do Chrome são por automação, não por pessoa. Na criação de acesso, se o painel Megavale já estiver logado no perfil, a execução usa essa sessão, mesmo que seja de outra pessoa.
 
 ## Várias automações ao mesmo tempo
 
@@ -60,6 +99,7 @@ O painel roda até `EXECUCOES_SIMULTANEAS` automações ao mesmo tempo, de tipos
 ```text
 app.py                      # cria o Flask e registra as rotas
 config.py
+Dockerfile, docker-compose.yml  # painel no servidor (seção "No servidor (Docker)")
 rotas/                      # uma blueprint por funcionalidade
   inicio.py                 # /
   habilitacao.py            # /ativador (/individual e /lote redirecionam para ele)
@@ -152,7 +192,7 @@ Colunas aceitas:
 - Cabeçalho sem diferença de acento, espaço ou maiúscula (`Ação Cielo` = `ACAO_CIELO`).
 - Outras colunas são ignoradas, e linhas sem código são puladas.
 - Um valor inválido recusa a planilha inteira antes de abrir o Chrome, com o número da linha na mensagem. O lote do painel Selenium trocava o valor inválido pelo padrão da tela sem avisar.
-- "Situações do CARDSE" e "Iniciar a partir do produto" valem para todas as linhas.
+- "Somente DESATIVAR ... quando situação" e "Iniciar a partir do produto" valem para todas as linhas. As situações marcadas valem para a rede que a linha desativar, CIELO ou CARDSE.
 - O modo "Coleta Estabelecimento", que existia na tela de lote do Selenium, não veio para cá: ele vai ganhar tela própria quando a coleta for migrada.
 
 ## Extrator

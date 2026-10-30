@@ -25,12 +25,13 @@ class ResultadoRede(NamedTuple):
 class Habilitacao(AutomacaoBase):
     """Ativa/desativa CIELO e CARDSE nos contratos de cada credenciado, ou só lê (modo verificação).
 
-    Regras (as mesmas da versão Selenium em automacoes/cielo_cardse.py):
+    Regras (as da versão Selenium em automacoes/cielo_cardse.py, que filtrava a situação só no CARDSE):
       - Contrato em DEFINIÇÃO é aprovado antes (Opções > Aprovar).
       - ATIVAR com a rede já habilitada, ou DESATIVAR com ela já desabilitada: nada a fazer.
-      - CARDSE só é desativado se a situação estiver entre as marcadas na tela (cardse_statuses).
-        Se depois do primeiro clique continuar habilitado e a nova situação também estiver
-        marcada, clica de novo (caso ENVIADO -> ATIVADO).
+      - CIELO e CARDSE só são desativados se a situação estiver entre as marcadas na tela
+        (situacoes_desativar). Se depois do primeiro clique a rede continuar habilitada e a
+        situação também estiver marcada, clica de novo (CARDSE ENVIADO -> ATIVADO; CIELO ENVIADO,
+        que continua ENVIADO).
       - produto_inicio pula contratos de número menor; produto_unico processa só aquele produto.
       - O modo verificação lê todos os contratos, sem filtros e sem alterar nada.
     """
@@ -39,12 +40,12 @@ class Habilitacao(AutomacaoBase):
 
     def __init__(self, credenciais: dict, itens: list[ItemHabilitacao], status, *,
                  tipo_pesquisa: str = "COD", modo_verificacao: bool = False,
-                 produto_inicio: int = 1, cardse_statuses=()):
+                 produto_inicio: int = 1, situacoes_desativar=()):
         super().__init__(credenciais, itens, status)
         self.tipo_pesquisa = tipo_pesquisa.upper()
         self.modo_verificacao = modo_verificacao
         self.produto_inicio = max(1, int(produto_inicio or 1))
-        self.cardse_statuses = {sem_acento_maiusculo(s) for s in cardse_statuses if str(s).strip()}
+        self.situacoes_desativar = {sem_acento_maiusculo(s) for s in situacoes_desativar if str(s).strip()}
         self.titulo = "Verificação CIELO/CARDSE" if modo_verificacao else "Habilitação CIELO/CARDSE"
         self._linhas_relatorio: list[dict] = []   # ativação: uma linha por contrato
         self._verificacao: list[dict] = []        # verificação: um bloco por credenciado
@@ -204,41 +205,38 @@ class Habilitacao(AutomacaoBase):
 
         if not habilitada:
             return ResultadoRede(False, f"{nome} já estava desabilitado")
-        if nome == "CARDSE":
-            return self._desabilitar_cardse(rede)
+        return self._desabilitar(rede, nome)
+
+    def _desabilitar(self, rede: RedeCaptura, nome: str) -> ResultadoRede:
+        situacao = rede.situacao(nome)
+        if not self._situacao_permitida(situacao):
+            return ResultadoRede(
+                False, f"{nome} mantido: situação '{situacao or 'vazia'}' não está marcada para desativar"
+            )
         if rede.desabilitar(nome):
             return ResultadoRede(True, f"{nome} desabilitado")
-        return ResultadoRede(
-            True, f"{nome}: cliquei em desabilitar, mas continuou SIM (agora: {rede.resumo(nome)})", aviso=True
-        )
 
-    def _desabilitar_cardse(self, rede: RedeCaptura) -> ResultadoRede:
-        situacao = rede.situacao("CARDSE")
-        if not self._situacao_cardse_permitida(situacao):
-            return ResultadoRede(
-                False, f"CARDSE mantido: situação '{situacao or 'vazia'}' não está marcada para desativar"
-            )
-        if rede.desabilitar("CARDSE"):
-            return ResultadoRede(True, "CARDSE desabilitado")
-
-        nova_situacao = rede.situacao("CARDSE")
-        if not rede.esta_habilitada("CARDSE"):
-            return ResultadoRede(True, "CARDSE desabilitado")
-        if not self._situacao_cardse_permitida(nova_situacao):
+        nova_situacao = rede.situacao(nome)
+        if not rede.esta_habilitada(nome):
+            return ResultadoRede(True, f"{nome} desabilitado")
+        if not self._situacao_permitida(nova_situacao):
             return ResultadoRede(
                 True,
-                f"CARDSE continua habilitado; situação passou para '{nova_situacao}', que não está marcada",
+                f"{nome} continua habilitado; situação passou para '{nova_situacao}', que não está marcada",
                 aviso=True,
             )
 
-        self.status.log(f"  CARDSE continua habilitado (situação agora: {nova_situacao}); desabilitando de novo.")
-        if rede.desabilitar("CARDSE"):
-            return ResultadoRede(True, f"CARDSE desabilitado em 2 cliques (situação passou para {nova_situacao})")
-        return ResultadoRede(True, "CARDSE: continuou SIM depois de 2 cliques em desabilitar", aviso=True)
+        self.status.log(f"  {nome} continua habilitado (situação agora: {nova_situacao}); desabilitando de novo.")
+        if rede.desabilitar(nome):
+            mudanca = "continuou" if nova_situacao == situacao else "passou para"
+            return ResultadoRede(True, f"{nome} desabilitado em 2 cliques (situação {mudanca} {nova_situacao})")
+        return ResultadoRede(
+            True, f"{nome}: continuou SIM depois de 2 cliques em desabilitar (agora: {rede.resumo(nome)})", aviso=True
+        )
 
-    def _situacao_cardse_permitida(self, situacao: str) -> bool:
+    def _situacao_permitida(self, situacao: str) -> bool:
         situacao = sem_acento_maiusculo(situacao)
-        return any(permitida in situacao for permitida in self.cardse_statuses)
+        return any(permitida in situacao for permitida in self.situacoes_desativar)
 
     def _aprovar_se_necessario(self) -> bool:
         estado = self.portal.estado_contrato()

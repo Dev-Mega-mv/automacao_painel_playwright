@@ -255,6 +255,8 @@ Todas as automações usam a mesma sequência de entrada, que vai para o núcleo
 
 Com `AMBOS`, aplica CIELO e depois CARDSE na mesma tela de contrato, antes de voltar.
 
+**No Playwright, a CIELO segue a regra de situação do CARDSE** (passo 25 de `modificacoes/`): DESATIVAR CIELO só clica se a situação estiver marcada e, se continuar `SIM` com a situação ainda marcada (ex.: `ENVIADO`), clica de novo. O campo da tela passou a se chamar `situacoes_desativar`; a rota ainda aceita `cardse_statuses` de uma aba antiga.
+
 No Playwright, as esperas de status viram asserções:
 
 ```python

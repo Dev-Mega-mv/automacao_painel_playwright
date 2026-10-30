@@ -1,3 +1,4 @@
-flask
-openpyxl
-playwright
+flask==3.1.3
+openpyxl==3.1.5
+playwright==1.61.0  # mesma versão da imagem do Dockerfile
+waitress==3.0.2     # servidor do painel no Docker

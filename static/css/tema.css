@@ -319,8 +319,8 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(229, 72, 77, .12);
 }
 
-/* Situações do CARDSE (checkboxes) em formato de "chip" */
-label:has(> input[name="cardse_statuses"]) {
+/* Situações para desativar CIELO/CARDSE (checkboxes) em formato de "chip" */
+label:has(> input[name="situacoes_desativar"]) {
   margin: 0;
   padding: .55rem .8rem;
   border: 1px solid var(--tema-linha);
@@ -333,17 +333,17 @@ label:has(> input[name="cardse_statuses"]) {
   transition: border-color .15s, background .15s;
 }
 
-label:has(> input[name="cardse_statuses"]):hover {
+label:has(> input[name="situacoes_desativar"]):hover {
   border-color: #c3d3ea;
 }
 
-label:has(> input[name="cardse_statuses"]:checked) {
+label:has(> input[name="situacoes_desativar"]:checked) {
   border-color: var(--tema-azul);
   background: #eff5ff;
   color: #1559d6;
 }
 
-input[name="cardse_statuses"] {
+input[name="situacoes_desativar"] {
   width: 16px;
   height: 16px;
   accent-color: var(--tema-azul);

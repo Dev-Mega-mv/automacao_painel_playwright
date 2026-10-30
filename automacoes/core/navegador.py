@@ -45,7 +45,8 @@ class Navegador:
                 channel="chrome",
                 headless=config.HEADLESS,
                 no_viewport=True,
-                args=["--start-maximized", "--disable-blink-features=AutomationControlled"],
+                args=[f"--window-size={config.TAMANHO_JANELA}" if config.TAMANHO_JANELA else "--start-maximized",
+                      "--disable-blink-features=AutomationControlled"],
                 ignore_default_args=["--enable-automation"],
             )
         except Exception:

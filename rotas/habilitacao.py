@@ -103,7 +103,8 @@ def ativador():
             tipo_pesquisa=tipo_pesquisa,
             modo_verificacao=form.get("modo_verificacao") == "1",
             produto_inicio=_inteiro(form.get("produto_inicio"), 1),
-            cardse_statuses=form.getlist("cardse_statuses"),
+            # cardse_statuses: nome antigo do campo, de uma aba aberta antes da troca
+            situacoes_desativar=form.getlist("situacoes_desativar") or form.getlist("cardse_statuses"),
         )
 
     return iniciar_e_acompanhar("habilitacao", criar_automacao)

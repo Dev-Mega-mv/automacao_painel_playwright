@@ -1,0 +1,22 @@
+# Painel de automações no servidor: docker compose up -d --build
+# Valores entre ${...} podem ir num arquivo .env ao lado deste (ex.: PORTA_HOST=8090).
+services:
+  painel:
+    build: .
+    image: automacao-painel-playwright
+    container_name: automacao-painel-playwright
+    restart: unless-stopped
+    init: true                 # recolhe os processos do Chrome que terminam
+    shm_size: "1gb"            # memória compartilhada do Chrome (o padrão de 64 MB derruba as abas)
+    mem_limit: "${LIMITE_MEMORIA:-3g}"  # cada Chrome usa de 300 a 500 MB, e o servidor é dividido com o GLPI
+    ports:
+      - "${PORTA_HOST:-8082}:8082"
+    environment:
+      TZ: America/Sao_Paulo
+      HEADLESS: "1"
+      EXECUCOES_SIMULTANEAS: "${EXECUCOES_SIMULTANEAS:-3}"
+      SALVAR_TRACE: "${SALVAR_TRACE:-erro}"
+    volumes:                   # ficam no servidor, fora do container (sobrevivem a atualizações)
+      - ./dados/perfis:/app/perfis
+      - ./dados/logs:/app/logs
+      - ./dados/relatorios:/app/relatorios

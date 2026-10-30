@@ -28,6 +28,8 @@ URL_MEGAVALE = os.getenv("URL_MEGAVALE", "https://app.megavalecard.com.br/")
 
 # Navegador (Playwright)
 HEADLESS = os.getenv("HEADLESS", "0") == "1"
+# Largura,altura da janela do Chrome. Vazio = maximizada; sem janela (servidor) não há tela para maximizar.
+TAMANHO_JANELA = os.getenv("TAMANHO_JANELA", "1600,1000" if HEADLESS else "")
 TIMEOUT_PADRAO_MS = int(os.getenv("TIMEOUT_PADRAO_MS", "15000"))
 ESPERA_CAPTCHA_S = int(os.getenv("ESPERA_CAPTCHA_S", "120"))
 SALVAR_TRACE = os.getenv("SALVAR_TRACE", "erro")  # "sempre" | "erro" | "nunca"

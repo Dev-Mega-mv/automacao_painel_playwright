@@ -1,0 +1,16 @@
+.git
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+
+# Gerados em execução (no servidor ficam em dados/, montados como volumes) e arquivos que não vão para a imagem
+perfis/
+logs/
+relatorios/
+dados/
+modificacoes/
+*.xlsx
+*.xls
+CLAUDE.md

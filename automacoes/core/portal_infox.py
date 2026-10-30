@@ -69,10 +69,12 @@ class PortalInfox:
 
         Depois de `espera_automatica_s` sem resultado, avisa na tela de status e dá
         mais config.ESPERA_CAPTCHA_S segundos para alguém resolver o captcha no Chrome.
+        Sem janela (HEADLESS=1, como no servidor) ninguém consegue resolver, então não espera.
         """
         menu = self.page.locator(S.MENU_RAIZ)
+        espera_captcha_s = 0 if config.HEADLESS else config.ESPERA_CAPTCHA_S
         inicio = time.monotonic()
-        limite = inicio + espera_automatica_s + config.ESPERA_CAPTCHA_S
+        limite = inicio + espera_automatica_s + espera_captcha_s
         avisou = False
         while time.monotonic() < limite:
             if self.status.parada_solicitada:
@@ -91,13 +93,18 @@ class PortalInfox:
             if erro:
                 raise LoginFalhou(f"O portal recusou o login: {erro}")
 
-            if not avisou and time.monotonic() - inicio > espera_automatica_s:
+            if not avisou and espera_captcha_s and time.monotonic() - inicio > espera_automatica_s:
                 self.log(
                     "O login não concluiu sozinho. Se houver captcha, resolva na janela do Chrome. "
-                    f"Aguardando até {config.ESPERA_CAPTCHA_S} segundos.",
+                    f"Aguardando até {espera_captcha_s} segundos.",
                     "WARNING",
                 )
                 avisou = True
+        if config.HEADLESS:
+            raise LoginFalhou(
+                f"O login não foi concluído em {espera_automatica_s} segundos. Confira usuário e senha. Se o portal "
+                "pediu captcha, ele não pode ser resolvido aqui (Chrome sem janela); tente de novo."
+            )
         raise LoginFalhou(
             "O login não foi concluído. Confira usuário e senha ou resolva o captcha na janela do Chrome."
         )

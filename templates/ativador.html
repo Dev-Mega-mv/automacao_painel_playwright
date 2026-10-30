@@ -688,18 +688,20 @@
           </div>
 
           <div class="form-group" style="margin-top:1rem;">
-            <label>Somente DESATIVAR CARDSE quando situação</label>
+            <label>Somente DESATIVAR <span id="situacoesRede">CIELO</span> quando situação</label>
             <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin-top:.5rem;">
-              <label style="display:flex;align-items:center;gap:.5rem;"><input type="checkbox" name="cardse_statuses"
+              <label style="display:flex;align-items:center;gap:.5rem;"><input type="checkbox" name="situacoes_desativar"
                   value="APROVADO"> APROVADO</label>
-              <label style="display:flex;align-items:center;gap:.5rem;"><input type="checkbox" name="cardse_statuses"
+              <label style="display:flex;align-items:center;gap:.5rem;"><input type="checkbox" name="situacoes_desativar"
                   value="ENVIADO"> ENVIADO</label>
-              <label style="display:flex;align-items:center;gap:.5rem;"><input type="checkbox" name="cardse_statuses"
+              <label style="display:flex;align-items:center;gap:.5rem;"><input type="checkbox" name="situacoes_desativar"
                   value="ATIVADO"> ATIVADO</label>
-              <label style="display:flex;align-items:center;gap:.5rem;"><input type="checkbox" name="cardse_statuses"
+              <label style="display:flex;align-items:center;gap:.5rem;"><input type="checkbox" name="situacoes_desativar"
                   value="CANCELADO NA REDE"> CANCELADO NA REDE</label>
             </div>
-            <div class="hint">Se não marcar nenhum item, nenhum CARDSE será desativado.</div>
+            <div class="hint">Se não marcar nenhum item, nenhum <span id="situacoesRedeDica">CIELO</span> será
+              desativado. Se continuar habilitado depois do clique e a situação também estiver marcada, clica de
+              novo.<span class="so-planilha"> Com planilha, vale para a rede desativada em cada linha.</span></div>
           </div>
 
           <!-- Ação AMBOS -->
@@ -814,6 +816,9 @@
       document.getElementById('acao-cielo-simples').style.display = tec === 'CIELO' ? 'block' : 'none';
       document.getElementById('acao-cardse-simples').style.display = tec === 'CARDSE' ? 'block' : 'none';
       document.getElementById('acao-ambos').style.display = tec === 'AMBOS' ? 'grid' : 'none';
+      // As situações valem para a rede que for desativada; o texto acompanha a tecnologia escolhida.
+      document.getElementById('situacoesRede').textContent = tec === 'AMBOS' ? 'CIELO e CARDSE' : tec;
+      document.getElementById('situacoesRedeDica').textContent = tec === 'AMBOS' ? 'CIELO ou CARDSE' : tec;
     }
 
     function atualizarBotao() {
