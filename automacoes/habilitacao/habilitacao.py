@@ -29,9 +29,9 @@ class Habilitacao(AutomacaoBase):
       - Contrato em DEFINIÇÃO é aprovado antes (Opções > Aprovar).
       - ATIVAR com a rede já habilitada, ou DESATIVAR com ela já desabilitada: nada a fazer.
       - CIELO e CARDSE só são desativados se a situação estiver entre as marcadas na tela
-        (situacoes_desativar). Se depois do primeiro clique a rede continuar habilitada e a
-        situação também estiver marcada, clica de novo (CARDSE ENVIADO -> ATIVADO; CIELO ENVIADO,
-        que continua ENVIADO).
+        (situacoes_desativar). Com ENVIADO, o link é "Desfazer" em vez de "Desabilitar".
+        Se depois do primeiro clique a rede continuar habilitada e a situação tiver mudado para
+        outra também marcada, clica de novo (CARDSE ENVIADO -> ATIVADO). Se nada mudou, não repete.
       - produto_inicio pula contratos de número menor; produto_unico processa só aquele produto.
       - O modo verificação lê todos os contratos, sem filtros e sem alterar nada.
     """
@@ -219,6 +219,11 @@ class Habilitacao(AutomacaoBase):
         nova_situacao = rede.situacao(nome)
         if not rede.esta_habilitada(nome):
             return ResultadoRede(True, f"{nome} desabilitado")
+        if nova_situacao == situacao:
+            # Não repete: com ENVIADO o link é "Desfazer", e o portal avisa que desfazer invalida o arquivo enviado.
+            return ResultadoRede(
+                True, f"{nome}: cliquei e confirmei, mas a linha não mudou (agora: {rede.resumo(nome)})", aviso=True
+            )
         if not self._situacao_permitida(nova_situacao):
             return ResultadoRede(
                 True,
@@ -228,8 +233,7 @@ class Habilitacao(AutomacaoBase):
 
         self.status.log(f"  {nome} continua habilitado (situação agora: {nova_situacao}); desabilitando de novo.")
         if rede.desabilitar(nome):
-            mudanca = "continuou" if nova_situacao == situacao else "passou para"
-            return ResultadoRede(True, f"{nome} desabilitado em 2 cliques (situação {mudanca} {nova_situacao})")
+            return ResultadoRede(True, f"{nome} desabilitado em 2 cliques (situação passou para {nova_situacao})")
         return ResultadoRede(
             True, f"{nome}: continuou SIM depois de 2 cliques em desabilitar (agora: {rede.resumo(nome)})", aviso=True
         )

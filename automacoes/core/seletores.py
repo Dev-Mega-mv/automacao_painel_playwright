@@ -138,7 +138,7 @@ REDE_LINHAS = "#report_REDE_DE_CAPTURA table.fwReport > tbody > tr"
 REDE_COL_ORIGEM = 'td[headers="ID_ORIGEM_TRANSACAO"]'
 REDE_COL_SITUACAO = 'td[headers="ID_ESTADO_ENVARQ"]'
 REDE_COL_HABILITADO = 'td[headers="HABILITADO"]'
-REDE_LINK_ACAO = 'td[headers="DISPLAY"] a'  # texto "Habilitar" ou "Desabilitar"
+REDE_LINK_ACAO = 'td[headers="DISPLAY"] a'  # texto "Habilitar", "Desabilitar" ou "Desfazer" (situação ENVIADO)
 
 # Popups ExtJS (confirmação "Sim" ao desabilitar, aviso "OK" ao habilitar CIELO)
 MESSAGEBOX = 'div[id*="messagebox"]:visible'

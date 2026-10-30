@@ -24,7 +24,7 @@ Testes no portal real (27/10/2026):
 - O login com Playwright passou sozinho, inclusive o captcha, em cerca de 10 s.
 - Pesquisa por código, lista de contratos (134 no credenciado 106941), abertura do contrato e leitura da rede de captura funcionaram com os seletores herdados.
 - ATIVAR CARDSE funcionou de ponta a ponta: 17 contratos do credenciado 235733, com o SIM confirmado em cada um.
-- **Em aberto:** em DESATIVAR CIELO com situação `ENVIADO` (credenciado 106941), o popup "Sim" foi confirmado, mas a coluna Habilitado continuou `SIM` nos 134 contratos. Conferir no portal se a CIELO ficou desativada. Se ficou, a tela só demora a atualizar e basta aumentar `RedeCaptura.TEMPO_CONFIRMACAO_MS` (hoje 8 s). Se não ficou, rodar um contrato só (campo "Produto") com `SALVAR_TRACE=sempre` e abrir o trace para ver o popup. A versão Selenium não confere o resultado depois do clique, então teria o mesmo comportamento sem avisar.
+- **Em aberto:** em DESATIVAR CIELO com situação `ENVIADO` (credenciado 106941), o popup "Sim" foi confirmado, mas a coluna Habilitado continuou `SIM` nos 134 contratos. Conferir no portal se a CIELO ficou desativada. Se ficou, a tela só demora a atualizar e basta aumentar `RedeCaptura.TEMPO_CONFIRMACAO_MS` (hoje 8 s). Se não ficou, rodar um contrato só (campo "Produto") com `SALVAR_TRACE=sempre` e abrir o trace para ver o popup. A versão Selenium não confere o resultado depois do clique, então teria o mesmo comportamento sem avisar. **Atualização (30/10, passo 26):** o link clicado era "Desfazer", e em 29/10 os contratos continuavam `SIM (ENVIADO)`. **Passo 27:** o Desfazer leva a linha na hora para `ATIVADO` (continua `SIM`); como o robô só olhava o Habilitado, registrou "continuou SIM". Em 29/10 estavam `ENVIADO` de novo, provavelmente reenviados pelo portal (não confirmado).
 
 ---
 
@@ -255,7 +255,7 @@ Todas as automações usam a mesma sequência de entrada, que vai para o núcleo
 
 Com `AMBOS`, aplica CIELO e depois CARDSE na mesma tela de contrato, antes de voltar.
 
-**No Playwright, a CIELO segue a regra de situação do CARDSE** (passo 25 de `modificacoes/`): DESATIVAR CIELO só clica se a situação estiver marcada e, se continuar `SIM` com a situação ainda marcada (ex.: `ENVIADO`), clica de novo. O campo da tela passou a se chamar `situacoes_desativar`; a rota ainda aceita `cardse_statuses` de uma aba antiga.
+**No Playwright, a CIELO segue a regra de situação do CARDSE** (passos 25 a 27 de `modificacoes/`): DESATIVAR CIELO só clica se a situação estiver marcada. Com `ENVIADO`, o link é **Desfazer**, e o popup pergunta "Deseja realmente desfazer a operação?" (Sim/Não), avisando que o arquivo já enviado será invalidado no retorno. Depois do Sim, a linha vai na hora para `ATIVADO`, continua `SIM` e o link vira "Desabilitar"; para chegar a `NÃO`, marque também ATIVADO (passo 27). Se continuar `SIM`, só clica de novo quando a situação mudou para outra também marcada (CARDSE ENVIADO → ATIVADO); se a linha não mudou, registra aviso sem repetir. O campo da tela passou a se chamar `situacoes_desativar`; a rota ainda aceita `cardse_statuses` de uma aba antiga.
 
 No Playwright, as esperas de status viram asserções:
 
