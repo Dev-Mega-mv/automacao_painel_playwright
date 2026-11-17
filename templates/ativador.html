@@ -696,8 +696,13 @@
                   value="ENVIADO"> ENVIADO</label>
               <label style="display:flex;align-items:center;gap:.5rem;"><input type="checkbox" name="situacoes_desativar"
                   value="ATIVADO"> ATIVADO</label>
-              <label style="display:flex;align-items:center;gap:.5rem;"><input type="checkbox" name="situacoes_desativar"
-                  value="CANCELADO NA REDE"> CANCELADO NA REDE</label>
+              <!-- Situação de cancelamento de cada rede: CIELO "CANCELADO NA ADM", CARDSE "CANCELADO NA REDE" -->
+              <label data-situacao-rede="CIELO" style="display:flex;align-items:center;gap:.5rem;"><input type="checkbox"
+                  name="situacoes_desativar" value="CANCELADO NA ADM"><span>CANCELADO NA ADM<span
+                    class="situacao-rede-nome" style="display:none;"> (CIELO)</span></span></label>
+              <label data-situacao-rede="CARDSE" style="display:none;align-items:center;gap:.5rem;"><input type="checkbox"
+                  name="situacoes_desativar" value="CANCELADO NA REDE" disabled><span>CANCELADO NA REDE<span
+                    class="situacao-rede-nome" style="display:none;"> (CARDSE)</span></span></label>
             </div>
             <div class="hint">Se não marcar nenhum item, nenhum <span id="situacoesRedeDica">CIELO</span> será
               desativado. Se continuar habilitado depois do clique e a situação também estiver marcada, clica de
@@ -819,6 +824,21 @@
       // As situações valem para a rede que for desativada; o texto acompanha a tecnologia escolhida.
       document.getElementById('situacoesRede').textContent = tec === 'AMBOS' ? 'CIELO e CARDSE' : tec;
       document.getElementById('situacoesRedeDica').textContent = tec === 'AMBOS' ? 'CIELO ou CARDSE' : tec;
+      atualizarSituacoes();
+    }
+
+    // O cancelamento tem nome diferente em cada rede: CIELO "CANCELADO NA ADM", CARDSE "CANCELADO NA REDE".
+    // Mostra só o da tecnologia escolhida; com Ambos ou planilha (cada linha tem a sua rede), os dois, com o nome
+    // da rede. A caixa escondida fica desativada e não é enviada, mas guarda a marcação para quando voltar.
+    function atualizarSituacoes() {
+      const tec = document.getElementById('val_tecnologia').value;
+      const variasRedes = tec === 'AMBOS' || document.getElementById('val_entrada').value === 'planilha';
+      document.querySelectorAll('[data-situacao-rede]').forEach(label => {
+        const visivel = variasRedes || label.dataset.situacaoRede === tec;
+        label.style.display = visivel ? 'flex' : 'none';
+        label.querySelector('input').disabled = !visivel;
+        label.querySelector('.situacao-rede-nome').style.display = variasRedes ? 'inline' : 'none';
+      });
     }
 
     function atualizarBotao() {
@@ -837,6 +857,7 @@
       document.getElementById('codCnpj').disabled = isPlanilha;
       document.getElementById('fileInput').disabled = !isPlanilha;
       atualizarBotao();
+      atualizarSituacoes();
     }
 
     function setModo(modo) {

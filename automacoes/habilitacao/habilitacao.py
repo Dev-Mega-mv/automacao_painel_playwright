@@ -28,6 +28,9 @@ class Habilitacao(AutomacaoBase):
     Regras (as da versão Selenium em automacoes/cielo_cardse.py, que filtrava a situação só no CARDSE):
       - Contrato em DEFINIÇÃO é aprovado antes (Opções > Aprovar).
       - ATIVAR com a rede já habilitada, ou DESATIVAR com ela já desabilitada: nada a fazer.
+      - Situação CANCELADO NA REDE com Habilitado SIM e link "Habilitar": DESATIVAR não tem o que fazer;
+        ATIVAR clica em "Habilitar" e espera a linha mudar. Com o link "Desabilitar", segue a regra normal.
+        A CIELO "CANCELADO NA ADM" ainda não tem esse tratamento.
       - CIELO e CARDSE só são desativados se a situação estiver entre as marcadas na tela
         (situacoes_desativar). Com ENVIADO, o link é "Desfazer" em vez de "Desabilitar".
         Se depois do primeiro clique a rede continuar habilitada e a situação tiver mudado para
@@ -192,6 +195,9 @@ class Habilitacao(AutomacaoBase):
         habilitada = rede.esta_habilitada(nome)
         self.status.log(f"  {nome}: {rede.resumo(nome)} | ação: {acao}")
 
+        if rede.cancelada(nome):
+            return self._cancelada(rede, nome, acao)
+
         if acao == "ATIVAR":
             if habilitada:
                 return ResultadoRede(False, f"{nome} já estava habilitado")
@@ -206,6 +212,19 @@ class Habilitacao(AutomacaoBase):
         if not habilitada:
             return ResultadoRede(False, f"{nome} já estava desabilitado")
         return self._desabilitar(rede, nome)
+
+    def _cancelada(self, rede: RedeCaptura, nome: str, acao: str) -> ResultadoRede:
+        """CANCELADO NA REDE com SIM e link "Habilitar": DESATIVAR não clica; ATIVAR clica em "Habilitar"."""
+        situacao = rede.situacao(nome)
+        if acao == "DESATIVAR":
+            return ResultadoRede(False, f"{nome} já cancelado ({situacao}); nada a desativar")
+        if rede.reabilitar(nome):
+            return ResultadoRede(True, f"{nome} reabilitado (estava {situacao}; agora: {rede.resumo(nome)})")
+        return ResultadoRede(
+            True,
+            f"{nome}: cliquei em Habilitar, mas a linha continua cancelada (agora: {rede.resumo(nome)})",
+            aviso=True,
+        )
 
     def _desabilitar(self, rede: RedeCaptura, nome: str) -> ResultadoRede:
         situacao = rede.situacao(nome)

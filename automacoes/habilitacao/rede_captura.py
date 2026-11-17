@@ -10,6 +10,7 @@ from ..core.texto import sem_acento_maiusculo
 
 _HABILITADO = re.compile(r"^\s*SIM\s*$", re.IGNORECASE)
 _DESABILITADO = re.compile(r"^(?!\s*SIM\s*$)\s*\S", re.IGNORECASE)  # preenchido e diferente de SIM
+SITUACAO_CANCELADA = "CANCELADO NA REDE"
 
 
 class RedeCaptura:
@@ -40,6 +41,22 @@ class RedeCaptura:
     def esta_habilitada(self, rede: str) -> bool:
         return self.habilitado(rede).upper() == "SIM"
 
+    def link_acao(self, rede: str) -> str:
+        """Texto do link de ação da rede ('Habilitar', 'Desabilitar', 'Desfazer' ou vazio)."""
+        return self._texto(self._celula(rede, S.REDE_LINK_ACAO))
+
+    def cancelada(self, rede: str) -> bool:
+        """Situação CANCELADO NA REDE com Habilitado 'SIM' e link "Habilitar" (não há "Desabilitar" para clicar).
+
+        Nem toda linha CANCELADO NA REDE mostra "Habilitar"; as que mostram "Desabilitar" seguem a regra normal.
+        A CIELO "CANCELADO NA ADM" fica de fora por enquanto (passo 29 de modificacoes/).
+        """
+        return (
+            SITUACAO_CANCELADA in sem_acento_maiusculo(self.situacao(rede))
+            and self.esta_habilitada(rede)
+            and sem_acento_maiusculo(self.link_acao(rede)) == "HABILITAR"
+        )
+
     def resumo(self, rede: str) -> str:
         """Ex.: 'SIM (ENVIADO)'. Usado nos logs e no relatório."""
         situacao = self.situacao(rede)
@@ -65,6 +82,17 @@ class RedeCaptura:
         if rede == "CIELO" and confirmar_messagebox(self.page, "OK"):
             self.log("Aviso da CIELO confirmado.")
         return self._aguardar(rede, habilitada=True)
+
+    def reabilitar(self, rede: str) -> bool:
+        """Clica em "Habilitar" numa rede cancelada (o portal não abre aviso) e espera a linha mudar.
+
+        Não dá para esperar o 'SIM', que já está lá antes do clique. Retorna True se a linha deixou de
+        estar cancelada e continua 'SIM'.
+        """
+        antes = self._estado(rede)
+        self._clicar_acao(rede, "Habilitar")
+        self._aguardar_mudanca(rede, antes)
+        return self.esta_habilitada(rede) and not self.cancelada(rede)
 
     def desabilitar(self, rede: str) -> bool:
         """Clica em "Desabilitar" (ou "Desfazer", que o portal mostra com a situação ENVIADO),
